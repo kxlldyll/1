@@ -1,0 +1,295 @@
+local UIS = game:GetService("UserInputService")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+
+local isAiming = false
+local menuOpen = true
+local espObjects = {}
+local fovRadius = 150
+local targetMode = 1  -- 1=Players, 2=Bosses, 3=NPCs
+
+local menuPos = Vector2.new(40, 100)
+local isDragging = false
+local dragOffset = Vector2.new(0, 0)
+local menuSize = Vector2.new(250, 155)
+
+-- Drawing Objects
+local background = Drawing.new("Square")
+local uiTitle = Drawing.new("Text")
+local uiStatus1 = Drawing.new("Text")
+local uiStatus2 = Drawing.new("Text")
+local uiStatus3 = Drawing.new("Text")
+local uiFov = Drawing.new("Text")
+local uiHelp = Drawing.new("Text")
+local fovCircle = Drawing.new("Circle")
+
+local function initUI()
+	background.Size = menuSize
+	background.Position = menuPos
+	background.Color = Color3.fromRGB(5, 5, 5)
+	background.Transparency = 0.85
+	background.Filled = true
+	background.Thickness = 2
+	background.Visible = true
+
+	uiTitle.Size = 15
+	uiTitle.Color = Color3.fromRGB(200, 255, 255)  -- soft white-blue
+	uiTitle.Outline = false
+	uiTitle.Visible = true
+
+	for _, txt in {uiStatus1, uiStatus2, uiStatus3, uiFov} do
+		txt.Size = 13
+		txt.Color = Color3.fromRGB(255, 255, 255)  -- white text
+		txt.Outline = false
+		txt.Visible = true
+	end
+
+	uiHelp.Text = "[-] Toggle Menu | [Z] Cycle Target | [ & ] FOV"
+	uiHelp.Size = 11
+	uiHelp.Color = Color3.fromRGB(180, 180, 180)
+	uiHelp.Outline = false
+	uiHelp.Visible = true
+end
+initUI()
+
+fovCircle.Thickness = 1
+fovCircle.Color = Color3.fromRGB(255, 255, 255)
+fovCircle.Filled = false
+fovCircle.Transparency = 0.55
+fovCircle.NumSides = 48
+fovCircle.Visible = true
+
+local function updateMenu()
+	if not menuOpen then return end
+
+	if isDragging then
+		local mousePos = UIS:GetMouseLocation()
+		menuPos = mousePos + dragOffset
+	end
+
+	background.Position = menuPos
+	background.Size = menuSize
+
+	uiTitle.Position = menuPos + Vector2.new(10, 8)
+	uiTitle.Text = "Ro-Ghoul Script"
+
+	uiStatus1.Position = menuPos + Vector2.new(15, 34)
+	uiStatus2.Position = menuPos + Vector2.new(15, 54)
+	uiStatus3.Position = menuPos + Vector2.new(15, 74)
+	uiFov.Position = menuPos + Vector2.new(15, 98)
+	uiHelp.Position = menuPos + Vector2.new(15, 122)
+
+	if targetMode == 1 then
+		uiStatus1.Text = "Players: ON"
+		uiStatus1.Color = Color3.fromRGB(0, 255, 100)   -- Green ON
+		uiStatus2.Text = "Bosses: OFF"
+		uiStatus2.Color = Color3.fromRGB(255, 60, 60)   -- Red OFF
+		uiStatus3.Text = "NPCs: OFF"
+		uiStatus3.Color = Color3.fromRGB(255, 60, 60)
+	elseif targetMode == 2 then
+		uiStatus1.Text = "Players: OFF"
+		uiStatus1.Color = Color3.fromRGB(255, 60, 60)
+		uiStatus2.Text = "Bosses: ON"
+		uiStatus2.Color = Color3.fromRGB(0, 255, 100)
+		uiStatus3.Text = "NPCs: OFF"
+		uiStatus3.Color = Color3.fromRGB(255, 60, 60)
+	elseif targetMode == 3 then
+		uiStatus1.Text = "Players: OFF"
+		uiStatus1.Color = Color3.fromRGB(255, 60, 60)
+		uiStatus2.Text = "Bosses: OFF"
+		uiStatus2.Color = Color3.fromRGB(255, 60, 60)
+		uiStatus3.Text = "NPCs: ON"
+		uiStatus3.Color = Color3.fromRGB(0, 255, 100)
+	end
+
+	uiFov.Text = "FOV Radius: " .. fovRadius .. " px"
+end
+
+local function isMajorBoss(name)
+	name = string.lower(name)
+	return name:find("eto") or name:find("nishiki") or name:find("amon") or name:find("owl") 
+		or name:find("kaneki") or name:find("saku") or name:find("gya")
+end
+
+local function isEndgameRaidBoss(name)
+	name = string.lower(name)
+	return (name:find("eto") and name:find("1250")) or (name:find("gya") and name:find("1250")) 
+		or (name:find("saku") and name:find("1250"))
+end
+
+local function getAnyValidPart(model)
+	return model.PrimaryPart or model:FindFirstChild("HumanoidRootPart") 
+		or model:FindFirstChild("Torso") or model:FindFirstChildWhichIsA("BasePart")
+end
+
+local function getClosestToCrosshair()
+	local closestDistance = fovRadius
+	local closestPart = nil
+	local screenCenter = Camera.ViewportSize / 2
+
+	for _, hum in ipairs(workspace:GetDescendants()) do
+		if hum:IsA("Humanoid") and hum.Health > 0 then
+			local model = hum.Parent
+			if model and model:IsA("Model") and model ~= LocalPlayer.Character then
+				local associated = Players:GetPlayerFromCharacter(model)
+				local passes = false
+
+				if associated then
+					passes = (targetMode == 1)
+				else
+					local n = model.Name
+					local isBoss = isMajorBoss(n) or isEndgameRaidBoss(n)
+					if isBoss then
+						passes = (targetMode == 2)
+					else
+						passes = (targetMode == 3)
+					end
+				end
+
+				if passes then
+					local part = getAnyValidPart(model)
+					if part then
+						local sp, onScreen = Camera:WorldToViewportPoint(part.Position)
+						if onScreen then
+							local dist = (screenCenter - Vector2.new(sp.X, sp.Y)).Magnitude
+							if dist < closestDistance then
+								closestDistance = dist
+								closestPart = part
+							end
+						end
+					end
+				end
+			end
+		end
+	end
+
+	return closestPart
+end
+
+-- Input
+UIS.InputBegan:Connect(function(input, processed)
+	if input.KeyCode == Enum.KeyCode.Minus then
+		menuOpen = not menuOpen
+		local v = menuOpen
+		background.Visible = v
+		uiTitle.Visible = v
+		uiStatus1.Visible = v
+		uiStatus2.Visible = v
+		uiStatus3.Visible = v
+		uiFov.Visible = v
+		uiHelp.Visible = v
+		return
+	end
+
+	if not menuOpen then return end
+
+	if input.KeyCode == Enum.KeyCode.Z then
+		targetMode = targetMode + 1
+		if targetMode > 3 then targetMode = 1 end
+		return
+	end
+
+	if input.KeyCode == Enum.KeyCode.LeftBracket then
+		fovRadius = math.max(10, fovRadius - 10)
+		return
+	end
+	if input.KeyCode == Enum.KeyCode.RightBracket then
+		fovRadius = math.min(800, fovRadius + 10)
+		return
+	end
+
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		local mp = UIS:GetMouseLocation()
+		if mp.X >= menuPos.X and mp.X <= menuPos.X + menuSize.X 
+		   and mp.Y >= menuPos.Y and mp.Y <= menuPos.Y + menuSize.Y then
+			isDragging = true
+			dragOffset = menuPos - mp
+			return
+		end
+	end
+
+	if processed then return end
+	if input.UserInputType == Enum.UserInputType.MouseButton2 then
+		isAiming = true
+	end
+end)
+
+UIS.InputEnded:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then isDragging = false end
+	if input.UserInputType == Enum.UserInputType.MouseButton2 then isAiming = false end
+end)
+
+local function createESP(player)
+	if espObjects[player] then return end
+	espObjects[player] = { Box = Drawing.new("Square") }
+end
+
+local function removeESP(player)
+	if espObjects[player] then
+		for _, obj in pairs(espObjects[player]) do
+			if obj and obj.Remove then obj:Remove() end
+		end
+		espObjects[player] = nil
+	end
+end
+
+Players.PlayerRemoving:Connect(removeESP)
+
+getgenv().GetDevTarget = function(fallback)
+	local target = getClosestToCrosshair()
+	return target and target.Position or fallback
+end
+
+-- Main Loop
+RunService.RenderStepped:Connect(function()
+	updateMenu()
+
+	fovCircle.Position = Camera.ViewportSize / 2
+	fovCircle.Radius = fovRadius
+
+	if isAiming then
+		local targetPart = getClosestToCrosshair()
+		if targetPart then
+			Camera.CFrame = CFrame.lookAt(Camera.CFrame.Position, targetPart.Position)
+		end
+	end
+
+	-- ESP for players only when in player mode
+	local validThisFrame = {}
+	if targetMode == 1 then
+		for _, plr in ipairs(Players:GetPlayers()) do
+			if plr ~= LocalPlayer and plr.Team ~= LocalPlayer.Team then
+				local char = plr.Character
+				local hum = char and char:FindFirstChildOfClass("Humanoid")
+				if hum and hum.Health > 0 then
+					local root = getAnyValidPart(char)
+					if root then
+						validThisFrame[plr] = true
+						createESP(plr)
+						local esp = espObjects[plr]
+
+						local top = Camera:WorldToViewportPoint(root.Position + Vector3.new(0, 3, 0))
+						local bot = Camera:WorldToViewportPoint(root.Position - Vector3.new(0, 3.5, 0))
+						local height = math.abs(top.Y - bot.Y)
+						local width = height / 1.8
+
+						esp.Box.Visible = true
+						esp.Box.Size = Vector2.new(width, height)
+						esp.Box.Position = Vector2.new(top.X - width/2, top.Y)
+						esp.Box.Color = Color3.fromRGB(0, 180, 180)
+						esp.Box.Thickness = 1.5
+						esp.Box.Filled = false
+						esp.Box.Transparency = 0.6
+					end
+				end
+			end
+		end
+	end
+
+	for plr in pairs(espObjects) do
+		if not validThisFrame[plr] then removeESP(plr) end
+	end
+end)
