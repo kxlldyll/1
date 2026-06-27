@@ -1,327 +1,184 @@
-local UIS = game:GetService("UserInputService")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local Workspace = game:GetService("Workspace")
+local StarterGui = game:GetService("StarterGui")
+
 local LocalPlayer = Players.LocalPlayer
-local Camera = workspace.CurrentCamera
+local Camera = Workspace.CurrentCamera
 
--- Global settings setup
-getgenv().AimbotMode = getgenv().AimbotMode or "Exclude"
-getgenv().IncludeList = getgenv().IncludeList or {}
-getgenv().ExcludeList = getgenv().ExcludeList or {}
-getgenv().FovRadiusValue = 99999 -- Expanded to max screen size so it locks anywhere on screen
-getgenv().IsAimbotActive = false
-getgenv().ActiveAimbotTarget = nil
-getgenv().ActiveTargetChar = nil
+local Settings = {
+    Enabled = true,
+    HoldKey = Enum.UserInputType.MouseButton2,
+    FOV = 140,
+    TargetMode = "Boss",
+    TargetPart = "Torso",
+    Smoothing = 0.00,
+    HitChance = 100,
+    Prediction = 0.12,
+    PlayerPrediction = 0.08,
+    DrawFOV = true,
+    FOVColor = Color3.fromRGB(255, 255, 255),
+    FOVThickness = 2
+}
 
--- Clean up older UI instances
-local oldUI = game:GetService("CoreGui"):FindFirstChild("RoGhoulCoreUI")
-if oldUI then oldUI:Destroy() end
+local BossKeywords = {"Arima", "Kaneki", "Jason", "Yamori", "Eto", "Tatara", "Noro", "Ayato", "Hinami", "Juuzou", "Yoshimura", "Shachi", "Roma", "Donato", "Furuta", "Rize", "Suzuya", "Boss", "Raid", "Fighter", "Elite"}
 
--- Main UI Setup
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "RoGhoulCoreUI"
-ScreenGui.ResetOnSpawn = false
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-ScreenGui.Parent = game:GetService("CoreGui")
+local CurrentTarget = nil
+local LastLockedName = ""
+local NotificationCount = 0
+local CurrentBossModel = nil
+local FOVCircle = Drawing.new("Circle")
 
-local MainFrame = Instance.new("Frame")
-MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 260, 0, 380) -- Made shorter since FOV labels are removed
-MainFrame.Position = UDim2.new(0, 40, 0, 100)
-MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-MainFrame.BackgroundTransparency = 0.15
-MainFrame.BorderSizePixel = 1
-MainFrame.BorderColor3 = Color3.fromRGB(40, 40, 40)
-MainFrame.Active = true
-MainFrame.Draggable = true
-MainFrame.Parent = ScreenGui
+FOVCircle.Thickness = Settings.FOVThickness
+FOVCircle.Color = Settings.FOVColor
+FOVCircle.Transparency = 0.75
+FOVCircle.Filled = false
+FOVCircle.NumSides = 64
 
-local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, 0, 0, 30)
-Title.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-Title.Text = " Ro-Ghoul Script Core"
-Title.TextColor3 = Color3.fromRGB(200, 255, 255)
-Title.TextXAlignment = Enum.TextXAlignment.Left
-Title.TextSize = 14
-Title.Font = Enum.Font.SourceSansBold
-Title.Parent = MainFrame
-
-local Container = Instance.new("Frame")
-Container.Size = UDim2.new(1, -20, 1, -40)
-Container.Position = UDim2.new(0, 10, 0, 35)
-Container.BackgroundTransparency = 1
-Container.Parent = MainFrame
-
-local UIListLayout = Instance.new("UIListLayout")
-UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-UIListLayout.Padding = UDim.new(0, 6)
-UIListLayout.Parent = Container
-
-local StatusLabel = Instance.new("TextLabel")
-StatusLabel.Size = UDim2.new(1, 0, 0, 20)
-StatusLabel.BackgroundTransparency = 1
-StatusLabel.Text = "Players: ON (Single Focus)"
-StatusLabel.TextColor3 = Color3.fromRGB(0, 255, 100)
-StatusLabel.TextXAlignment = Enum.TextXAlignment.Left
-StatusLabel.TextSize = 13
-StatusLabel.Font = Enum.Font.SourceSans
-StatusLabel.Parent = Container
-
-local ModeLabel = Instance.new("TextLabel")
-ModeLabel.Size = UDim2.new(1, 0, 0, 20)
-ModeLabel.BackgroundTransparency = 1
-ModeLabel.Text = "Filter Mode: " .. getgenv().AimbotMode:upper()
-ModeLabel.TextColor3 = Color3.fromRGB(255, 200, 50)
-ModeLabel.TextXAlignment = Enum.TextXAlignment.Left
-ModeLabel.TextSize = 13
-ModeLabel.Font = Enum.Font.SourceSansBold
-ModeLabel.Parent = Container
-
-local WLTextBox = Instance.new("TextBox")
-WLTextBox.Size = UDim2.new(1, 0, 0, 26)
-WLTextBox.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-WLTextBox.BorderSizePixel = 1
-WLTextBox.BorderColor3 = Color3.fromRGB(60, 60, 60)
-WLTextBox.Text = ""
-WLTextBox.PlaceholderText = "Type user OR type 'clear'..."
-WLTextBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-WLTextBox.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
-WLTextBox.TextSize = 13
-WLTextBox.Font = Enum.Font.SourceSans
-WLTextBox.ClearTextOnFocus = true
-WLTextBox.Parent = Container
-
-local DisplayListLabel = Instance.new("TextLabel")
-DisplayListLabel.Size = UDim2.new(1, 0, 0, 160)
-DisplayListLabel.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
-DisplayListLabel.BorderSizePixel = 1
-DisplayListLabel.BorderColor3 = Color3.fromRGB(30, 30, 30)
-DisplayListLabel.Text = "Include:\n\nExclude:\n"
-DisplayListLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-DisplayListLabel.TextXAlignment = Enum.TextXAlignment.Left
-DisplayListLabel.TextYAlignment = Enum.TextYAlignment.Top
-DisplayListLabel.TextSize = 12
-DisplayListLabel.Font = Enum.Font.Code
-DisplayListLabel.TextWrapped = true
-DisplayListLabel.Parent = Container
-
-local HelpLabel = Instance.new("TextLabel")
-HelpLabel.Size = UDim2.new(1, 0, 0, 40)
-HelpLabel.BackgroundTransparency = 1
-HelpLabel.Text = "[-] Menu | [*] Toggle Mode Strategy\nType 'clear' into text box to reset"
-HelpLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
-HelpLabel.TextXAlignment = Enum.TextXAlignment.Left
-HelpLabel.TextSize = 11
-HelpLabel.Font = Enum.Font.SourceSans
-HelpLabel.Parent = Container
-
-local function getPlayerByPartialName(name)
-    name = name:lower()
-    for _, plr in ipairs(Players:GetPlayers()) do
-        if plr.Name:lower():sub(1, #name) == name then
-            return plr
-        end
-    end
-    return nil
+local function ShowToast(message)
+    StarterGui:SetCore("SendNotification", {Title = "Ro Ghoul", Text = message, Duration = 2.5})
 end
 
-local function updateVisualListDisplay()
-    local includeNames = {}
-    local excludeNames = {}
-    for k, _ in pairs(getgenv().IncludeList) do
-        local formattedName = k:sub(1,1):upper() .. k:sub(2)
-        table.insert(includeNames, formattedName)
-    end
-    for k, _ in pairs(getgenv().ExcludeList) do
-        local formattedName = k:sub(1,1):upper() .. k:sub(2)
-        table.insert(excludeNames, formattedName)
-    end
-    local incStr = "Include:\n " .. (#includeNames > 0 and table.concat(includeNames, ", ") or "(empty)")
-    local excStr = "Exclude:\n " .. (#excludeNames > 0 and table.concat(excludeNames, ", ") or "(empty)")
-    DisplayListLabel.Text = incStr .. "\n\n" .. excStr
+ShowToast("Script loaded.")
+
+local function GetBossDisplayName(model)
+    if not model then return "Unknown" end
+    return model.Name
 end
 
-local function toggleFilterMode()
-    if getgenv().AimbotMode == "Exclude" then
-        getgenv().AimbotMode = "Include"
-    else
-        getgenv().AimbotMode = "Exclude"
-    end
-    ModeLabel.Text = "Filter Mode: " .. getgenv().AimbotMode:upper()
-    WLTextBox.PlaceholderText = "Switched to " .. getgenv().AimbotMode .. "!"
-    getgenv().ActiveAimbotTarget = nil
-    getgenv().ActiveTargetChar = nil
-    updateVisualListDisplay()
-end
-
-updateVisualListDisplay()
-
--- Automatic server logout cleaner
-Players.PlayerRemoving:Connect(function(player)
-    local lowerName = player.Name:lower()
-    if getgenv().IncludeList[lowerName] ~= nil or getgenv().ExcludeList[lowerName] ~= nil then
-        getgenv().IncludeList[lowerName] = nil
-        getgenv().ExcludeList[lowerName] = nil
-        if getgenv().ActiveAimbotTarget == player then
-            getgenv().ActiveAimbotTarget = nil
-            getgenv().ActiveTargetChar = nil
-        end
-        updateVisualListDisplay()
-    end
-end)
-
-WLTextBox.FocusLost:Connect(function(enterPressed)
-    if enterPressed and WLTextBox.Text ~= "" then
-        local txt = WLTextBox.Text:match("^%s*(.-)%s*$")
-        if txt:lower() == "!mode" then
-            toggleFilterMode()
-        elseif txt:lower() == "clear" or txt:lower() == "!clear" then
-            getgenv().IncludeList = {}
-            getgenv().ExcludeList = {}
-            WLTextBox.PlaceholderText = "Lists completely cleared!"
-            getgenv().ActiveAimbotTarget = nil
-            getgenv().ActiveTargetChar = nil
-            updateVisualListDisplay()
-        else
-            local targetPlayer = getPlayerByPartialName(txt)
-            if targetPlayer then
-                local lowerName = targetPlayer.Name:lower()
-                if getgenv().AimbotMode == "Include" then
-                    if getgenv().IncludeList[lowerName] then
-                        getgenv().IncludeList[lowerName] = nil
-                        WLTextBox.PlaceholderText = "Removed: " .. targetPlayer.Name
-                    else
-                        getgenv().IncludeList[lowerName] = true
-                        WLTextBox.PlaceholderText = "Targeting: " .. targetPlayer.Name
-                    end
-                else
-                    if getgenv().ExcludeList[lowerName] then
-                        getgenv().ExcludeList[lowerName] = nil
-                        WLTextBox.PlaceholderText = "Removed: " .. targetPlayer.Name
-                    else
-                        getgenv().ExcludeList[lowerName] = true
-                        WLTextBox.PlaceholderText = "Whitelisted: " .. targetPlayer.Name
-                    end
-                end
-                getgenv().ActiveAimbotTarget = nil
-                getgenv().ActiveTargetChar = nil
-            else
-                WLTextBox.PlaceholderText = "User not found!"
-            end
-            updateVisualListDisplay()
-        end
-        WLTextBox.Text = ""
-    end
-end)
-
-UIS.InputBegan:Connect(function(input, processed)
-    if input.KeyCode == Enum.KeyCode.Minus then
-        MainFrame.Visible = not MainFrame.Visible
-        return
-    end
-    -- Asterisk keybind strictly swaps your strategy modes
-    if input.KeyCode == Enum.KeyCode.Asterisk then
-        toggleFilterMode()
-        return
-    end
-    if processed then return end
-    if input.UserInputType == Enum.UserInputType.MouseButton2 then
-        getgenv().IsAimbotActive = true
-    end
-end)
-
-UIS.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton2 then
-        getgenv().IsAimbotActive = false
-        getgenv().ActiveAimbotTarget = nil
-        getgenv().ActiveTargetChar = nil
-    end
-end)
-
-local function isAllowedTarget(player)
-    if not player then return false end
-    local lowerName = player.Name:lower()
-    if getgenv().AimbotMode == "Include" then
-        return getgenv().IncludeList[lowerName] == true
-    else
-        return not (getgenv().ExcludeList[lowerName] == true)
-    end
-end
-
-local function getAnyValidPart(model)
-    return model:FindFirstChild("Head") or model:FindFirstChild("HumanoidRootPart") or model.PrimaryPart or model:FindFirstChild("Torso") or model:FindFirstChildWhichIsA("BasePart")
-end
-
-local function isValidTarget(character)
-    if not character or not character:IsDescendantOf(workspace) then return false end
-    local plr = Players:GetPlayerFromCharacter(character)
-    if not isAllowedTarget(plr) then return false end
-    local hum = character:FindFirstChildOfClass("Humanoid")
-    if not hum or hum.Health <= 0 then return false end
-        local part = getAnyValidPart(character)
-    if not part then return false end
+local function IsValidBoss(model)
+    if not model or not model:FindFirstChild("Humanoid") or model.Humanoid.Health <= 0 then return false end
+    local hum = model.Humanoid
+    if hum.MaxHealth >= 5000 then return true end
     
-    local _, onScreen = Camera:WorldToViewportPoint(part.Position)
-    if not onScreen then return false end
-    
+    local name = model.Name:lower()
+    for _, kw in ipairs(BossKeywords) do
+        if name:find(kw:lower()) then return true end
+    end
+    return false
+end
+
+local function IsValidPlayer(target)
+    if not target or not target:FindFirstChild("Humanoid") or target.Humanoid.Health <= 0 then return false end
+    local plr = Players:GetPlayerFromCharacter(target)
+    if not plr or plr == LocalPlayer then return false end
+    if plr.Team and LocalPlayer.Team and plr.Team == LocalPlayer.Team then return false end
     return true
 end
 
-local function getClosestToCrosshair()
-    local closestDistance = 99999
-    local closestPart = nil
-    local chosenPlayer = nil
-    local screenCenter = Camera.ViewportSize / 2
-    
-    for _, plr in ipairs(Players:GetPlayers()) do
-        if plr ~= LocalPlayer and isAllowedTarget(plr) and plr.Character then
-            local model = plr.Character
-            local hum = model:FindFirstChildOfClass("Humanoid")
-            if hum and hum.Health > 0 then
-                local part = getAnyValidPart(model)
+local function GetClosestTarget()
+    local closest = nil
+    local bestDist = Settings.FOV
+    local mousePos = Camera.ViewportSize / 2
+
+    for _, obj in ipairs(Workspace:GetDescendants()) do
+        if obj:IsA("Model") then
+            local valid = false
+            if Settings.TargetMode == "Boss" then
+                valid = IsValidBoss(obj)
+            else
+                valid = IsValidPlayer(obj)
+            end
+            
+            if valid then
+                local part = obj:FindFirstChild(Settings.TargetPart) 
+                          or obj:FindFirstChild("UpperTorso") 
+                          or obj:FindFirstChild("HumanoidRootPart")
+                
                 if part then
-                    local sp, onScreen = Camera:WorldToViewportPoint(part.Position)
+                    local screen, onScreen = Camera:WorldToViewportPoint(part.Position)
                     if onScreen then
-                        local dist = (screenCenter - Vector2.new(sp.X, sp.Y)).Magnitude
-                        if dist < closestDistance then
-                            closestDistance = dist
-                            closestPart = part
-                            chosenPlayer = plr
+                        local dist = (Vector2.new(screen.X, screen.Y) - mousePos).Magnitude
+                        if dist < bestDist then
+                            bestDist = dist
+                            closest = {Part = part, Model = obj}
                         end
                     end
                 end
             end
         end
     end
-    return closestPart, chosenPlayer
+    return closest
 end
 
-getgenv().GetDevTarget = function(fallback)
-    if getgenv().ActiveTargetChar and isValidTarget(getgenv().ActiveTargetChar) then
-        local part = getAnyValidPart(getgenv().ActiveTargetChar)
-        return part and part.Position or fallback
-    end
-    local target = getClosestToCrosshair()
-    return target and target.Position or fallback
+local function PredictPosition(part)
+    local pred = Settings.TargetMode == "Boss" and Settings.Prediction or Settings.PlayerPrediction
+    return part.Position + (part.Velocity * pred)
 end
 
 RunService.RenderStepped:Connect(function()
-    if getgenv().IsAimbotActive then
-        if getgenv().ActiveTargetChar and isValidTarget(getgenv().ActiveTargetChar) then
-            local targetPart = getAnyValidPart(getgenv().ActiveTargetChar)
-            if targetPart then
-                Camera.CFrame = CFrame.lookAt(Camera.CFrame.Position, targetPart.Position)
-            end
-        else
-            getgenv().ActiveAimbotTarget = nil
-            getgenv().ActiveTargetChar = nil
+    if Settings.DrawFOV then
+        FOVCircle.Position = Camera.ViewportSize / 2
+        FOVCircle.Radius = Settings.FOV
+        FOVCircle.Visible = true
+    else
+        FOVCircle.Visible = false
+    end
+
+    if not Settings.Enabled or not UserInputService:IsMouseButtonPressed(Settings.HoldKey) then
+        CurrentTarget = nil
+        LastLockedName = ""
+        return
+    end
+
+    local targetData = GetClosestTarget()
+
+    if targetData then
+        local currentName = GetBossDisplayName(targetData.Model)
+        local isNewBoss = (CurrentBossModel ~= targetData.Model)
+        
+        if isNewBoss then
+            CurrentBossModel = targetData.Model
+            NotificationCount = 0
+        end
+
+        if CurrentTarget ~= targetData.Part or LastLockedName ~= currentName then
+            CurrentTarget = targetData.Part
+            LastLockedName = currentName
             
-            local nextPart, nextPlayer = getClosestToCrosshair()
-            if nextPart and nextPlayer then
-                getgenv().ActiveAimbotTarget = nextPlayer
-                getgenv().ActiveTargetChar = nextPlayer.Character
-                Camera.CFrame = CFrame.lookAt(Camera.CFrame.Position, nextPart.Position)
+            if NotificationCount < 2 then
+                NotificationCount = NotificationCount + 1
+                ShowToast("Locked on: " .. currentName)
             end
+        end
+
+        if math.random(100) <= Settings.HitChance then
+            local targetPos = PredictPosition(targetData.Part)
+            local targetCFrame = CFrame.lookAt(Camera.CFrame.Position, targetPos)
+            Camera.CFrame = targetCFrame
+        end
+    else
+        if CurrentTarget then
+            ShowToast("Target Lost")
+        end
+        CurrentTarget = nil
+        if CurrentBossModel and CurrentBossModel:FindFirstChild("Humanoid") and CurrentBossModel.Humanoid.Health <= 0 then
+            CurrentBossModel = nil
         end
     end
 end)
+
+UserInputService.InputBegan:Connect(function(input, processed)
+    if processed then return end  -- ignore if typing in chat
+
+    if input.KeyCode == Enum.KeyCode.Z then
+        Settings.TargetMode = Settings.TargetMode == "Boss" and "Player" or "Boss"
+        ShowToast("Mode: " .. Settings.TargetMode .. " Aimbot")
+    elseif input.KeyCode == Enum.KeyCode.X then
+        Settings.TargetPart = Settings.TargetPart == "Torso" and "Head" or "Torso"
+        ShowToast("Target Part: " .. Settings.TargetPart)
+    elseif input.KeyCode == Enum.KeyCode.B then
+        if Settings.Prediction == 0.12 then
+            Settings.Prediction = 0.18
+            Settings.PlayerPrediction = 0.12
+            ShowToast("Prediction: High")
+        else
+            Settings.Prediction = 0.12
+            Settings.PlayerPrediction = 0.08
+            ShowToast("Prediction: Normal")
+        end
+    end
+end)
+
+print("Loaded - Z = Mode | X = Torso/Head | B = Prediction")
