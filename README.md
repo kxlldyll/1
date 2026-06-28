@@ -1,5 +1,9 @@
 # Roblox Exploits
 
+Personal note:
+
+You may modify these scripts, add, all of that shit I don't care. Just do not frame me for you getting banned, I do not advise you to do this on your mane, always use an alt.
+
 Open source Roblox scripts.  
 **Use at your own risk.**
 
@@ -23,3 +27,4 @@ Using these scripts can result in account termination. Always use on alternate a
 
 **Made with pure hate.**  
 **Fuck Byfron.**
+
