@@ -16,7 +16,7 @@
 **Made with pure hate.**  
 **Fuck Byfron.**
 
-
+---
 **You may use these loadstrings at YOUR own risk.**
 
 loadstring(game:HttpGet("https://raw.githubusercontent.com/kxlldyll/studious/refs/heads/main/PvP"))() - `PvP`
