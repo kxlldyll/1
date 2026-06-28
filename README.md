@@ -7,21 +7,8 @@ Open source Roblox scripts.
 
 ### Script Status: Active
 
-## Scripts
-
-- **[FFA Silent Aim + ESP](scripts/FFA_Silent_Aim_ESP.lua)**  
-  Universal silent aim (RMB) + advanced ESP. Works on both players and NPCs.
-
-- **[PVP Combat](scripts/PVP_Combat.lua)**  
-  Designed for player vs player. Ignores teammates/allies, focuses on real players.
-
-- **[PVE Raid](scripts/PVE_Raid.lua)**  
-  Specialized for PvE content. Targets bots/NPCs only, ignores players.
-
 ## Features
 - Clean, optimized, and well-commented code
-- Strong anti-detection measures
-- Custom dark themes (Grok Pure Black, Grok Crimson, etc.)
 - Compatible with popular executors (Potassium, Wave, etc.)
 
 ## How To Use
