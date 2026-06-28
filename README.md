@@ -1,30 +1,17 @@
-# Roblox Exploits
+## Disclaimer - Read Me
 
-Personal note:
+**Important Notice:**
 
-You may modify these scripts, add, all of that shit I don't care. Just do not frame me for you getting banned, I do not advise you to do this on your mane, always use an alt.
+- I do **not** condone exploiting, cheating, or violating Roblox's Terms of Service in any way.
+- These scripts are shared **for educational and research purposes only**.
+- I am **not responsible** for any consequences that may occur from using these scripts, including but not limited to: account bans, hardware bans, or any other penalties from Roblox.
+- Use these scripts **at your own risk**.
+- I do not provide support for bypassing anti-cheats or evading bans.
+- Any misuse of these scripts is solely the responsibility of the user.
 
-Open source Roblox scripts.  
-**Use at your own risk.**
-
-**Disclaimer:** I do not condone exploiting or violating Roblox's Terms of Service. These scripts are provided for educational and research purposes only.
-
-### Script Status: Active
-
-## Features
-- Clean, optimized, and well-commented code
-- Compatible with popular executors (Potassium, Wave, etc.)
-
-## How To Use
-1. Download the desired script from the `scripts/` folder
-2. Execute using your preferred executor
-3. Use the in-game controls (RMB for aim in FFA script, etc.)
-
-## Warning
-Using these scripts can result in account termination. Always use on alternate accounts.
+**Do not** use these scripts on your main account.
 
 ---
 
-**Made with pure hate.**  
+**Made with pure hatred to moderation.**
 **Fuck Byfron.**
-
