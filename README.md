@@ -1,32 +1,39 @@
-# Roblox Exploits / Tools
+# Roblox Exploits
 
-Open source Roblox scripts & executors tools.
+Open-source Roblox scripts. Use at your own risk.
 
-**Status:** Active | **Executor:** Potassium + others
+**Note:** I do not condone exploiting or violating Roblox ToS. These are for educational purposes only.
+
+### Script Status: Active
 
 ## Scripts
 
-- `FFA Silent Aim + ESP` - Universal aimbot + advanced ESP for FFA
-- `PVP Combat` - ...
-- `PVE Raid` - ...
+- **[FFA Silent Aim + ESP](scripts/FFA_Silent_Aim_ESP.lua)**  
+  Universal silent aim (RMB) + full ESP for players and NPCs. Perfect for FFA games.
+
+- **[PVP Combat](scripts/PVP_Combat.lua)**  
+  ...
+
+- **[PVE Raid](scripts/PVE_Raid.lua)**  
+  ...
 
 ## Features
-- Silent Aim
-- Advanced ESP (Players + NPCs)
-- Clean UI Themes
-- etc.
+- Clean & optimized code
+- Custom dark themes (Grok Pure Black, Grok Crimson, etc.)
+- Good anti-detection practices
+- Works on popular executors (Potassium, etc.)
 
-## How to use
-1. Copy the script
-2. Execute with Potassium / your executor
-3. Enjoy
-
-## Warning
-Use at your own risk. Accounts can get banned.
+## How To Use
+1. Download the script
+2. Execute with your preferred executor
+3. Toggle features as needed
 
 ## Themes
-Custom dark themes included (Grok Pure Black, Grok Crimson, etc.)
+Custom Potassium themes included in the `themes/` folder.
+
+## Disclaimer
+These scripts may result in account bans. Always use on alt accounts.
 
 ---
 
-Made with hate for Byfron.
+Made for fun. Star the repo if you fw it.
