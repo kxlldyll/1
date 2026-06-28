@@ -15,3 +15,10 @@
 
 **Made with pure hate.**  
 **Fuck Byfron.**
+
+
+You may use these loadstrings at YOUR own risk.
+
+PvP: loadstring(game:HttpGet("https://raw.githubusercontent.com/kxlldyll/studious/refs/heads/main/PvP"))()
+PvE: loadstring(game:HttpGet("https://raw.githubusercontent.com/kxlldyll/studious/refs/heads/main/PvE"))()
+FFA: loadstring(game:HttpGet("https://raw.githubusercontent.com/kxlldyll/studious/refs/heads/main/FFA"))()
