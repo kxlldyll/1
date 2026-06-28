@@ -19,6 +19,6 @@
 
 You may use these loadstrings at YOUR own risk.
 
-PvP: loadstring(game:HttpGet("https://raw.githubusercontent.com/kxlldyll/studious/refs/heads/main/PvP"))()
-PvE: loadstring(game:HttpGet("https://raw.githubusercontent.com/kxlldyll/studious/refs/heads/main/PvE"))()
-FFA: loadstring(game:HttpGet("https://raw.githubusercontent.com/kxlldyll/studious/refs/heads/main/FFA"))()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/kxlldyll/studious/refs/heads/main/PvP"))() - `PvP`
+loadstring(game:HttpGet("https://raw.githubusercontent.com/kxlldyll/studious/refs/heads/main/PvE"))() - `PvE`
+loadstring(game:HttpGet("https://raw.githubusercontent.com/kxlldyll/studious/refs/heads/main/FFA"))() - `FFA`
