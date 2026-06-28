@@ -9,17 +9,16 @@ Open-source Roblox scripts. Use at your own risk.
 ## Scripts
 
 - **[FFA Silent Aim + ESP](scripts/FFA_Silent_Aim_ESP.lua)**  
-  Universal silent aim (RMB) + full ESP for players and NPCs. Perfect for FFA games.
+  This can be used for PvP and PvE.
 
 - **[PVP Combat](scripts/PVP_Combat.lua)**  
-  ...
+ Primarly for PvP, will not detect allies (ignores), will not target bots.
 
 - **[PVE Raid](scripts/PVE_Raid.lua)**  
-  ...
+Entirely made to target bots in roblox games not players.
 
 ## Features
 - Clean & optimized code
-- Custom dark themes (Grok Pure Black, Grok Crimson, etc.)
 - Good anti-detection practices
 - Works on popular executors (Potassium, etc.)
 
@@ -28,12 +27,9 @@ Open-source Roblox scripts. Use at your own risk.
 2. Execute with your preferred executor
 3. Toggle features as needed
 
-## Themes
-Custom Potassium themes included in the `themes/` folder.
-
 ## Disclaimer
 These scripts may result in account bans. Always use on alt accounts.
 
 ---
 
-Made for fun. Star the repo if you fw it.
+# MADE WITH HATE FUCK BYFRON.
